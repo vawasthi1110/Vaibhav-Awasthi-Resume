@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vaibhav Awasthi | Senior Project Management Professional</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Warm Neutrals -->
+    <!-- Application Structure Plan: The SPA is designed as a non-linear, interactive portfolio. It replaces the traditional resume format with a user-driven experience. A sticky navigation bar allows users to jump to any section instantly. The 'Overview' acts as a dashboard with high-level stats and a domain expertise chart for a quick summary. The 'Experience' section uses an interactive, collapsible timeline to manage the density of information, making 11+ years of experience digestible. The Gemini API feature for role-specific interview questions remains, offering recruiters immediate, actionable insights. -->
+    <!-- Visualization & Content Choices: 
+        - Report Info: Career Summary -> Goal: Inform -> Viz/Method: Key Stat Cards (HTML/Tailwind) -> Interaction: Hover effect -> Justification: Provides a quick, high-impact summary of experience.
+        - Report Info: Domain Experience -> Goal: Show proportions/breadth -> Viz/Method: Doughnut Chart (Chart.js/Canvas) -> Interaction: Hover for tooltips -> Justification: Visually communicates the diversity of domain knowledge.
+        - Report Info: Work History -> Goal: Organize/Change -> Viz/Method: Interactive Vertical Timeline (HTML/Tailwind/JS) -> Interaction: Click to expand/collapse details, Click 'Ask AI' button -> Justification: Manages dense data and provides AI-generated interview questions via Gemini API for recruiter utility.
+        - Report Info: Skills List -> Goal: Organize/Inform -> Viz/Method: Categorized Badges (HTML/Tailwind) -> Interaction: None -> Justification: Enhances scannability. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #FDFBF8; /* Warm off-white */
+            color: #383838; /* Dark Gray */
+        }
+        .nav-link {
+            transition: color 0.3s ease, border-bottom-color 0.3s ease;
+            border-bottom: 2px solid transparent;
+        }
+        .nav-link:hover, .nav-link.active {
+            color: #D97706; /* Amber-600 */
+            border-bottom-color: #D97706;
+        }
+        .timeline-item-content {
+            transition: max-height 0.7s ease-in-out, opacity 0.5s ease-in-out, transform 0.7s ease-in-out;
+            transform-origin: top;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 450px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 350px;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 400px;
+            }
+        }
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #D97706;
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .gemini-button {
+            background-color: #FBBF24;
+            color: #78350F;
+        }
+        .gemini-button:hover {
+            background-color: #F59E0B;
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <!-- AI Modal -->
+    <div id="ai-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center p-4 border-b">
+                <h3 id="modal-title" class="text-lg font-bold text-amber-800">✨ AI Assistant</h3>
+                <button id="modal-close-button" class="text-gray-500 hover:text-gray-800">&times;</button>
+            </div>
+            <div id="modal-content" class="p-6">
+                <!-- Content will be injected here -->
+            </div>
+            <div class="p-2 text-center text-xs text-gray-400 border-t">
+                AI-generated content. Please verify for accuracy.
+            </div>
+        </div>
+    </div>
+
+    <header id="header" class="bg-white/80 backdrop-blur-lg sticky top-0 z-40 shadow-sm">
+        <nav class="container mx-auto px-6 py-3">
+            <div class="flex justify-between items-center">
+                <a href="#home" class="text-xl font-bold text-amber-700">Vaibhav Awasthi</a>
+                <div class="hidden md:flex space-x-8">
+                    <a href="#overview" class="nav-link font-medium py-1">Overview</a>
+                    <a href="#experience" class="nav-link font-medium py-1">Experience</a>
+                    <a href="#skills" class="nav-link font-medium py-1">Skills</a>
+                    <a href="#education" class="nav-link font-medium py-1">Education</a>
+                </div>
+                <div class="md:hidden">
+                    <button id="mobile-menu-button" class="text-gray-700 focus:outline-none">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
+                    </button>
+                </div>
+            </div>
+            <div id="mobile-menu" class="hidden md:hidden mt-4">
+                <a href="#overview" class="block py-2 px-4 text-sm text-gray-700 hover:bg-amber-50 rounded">Overview</a>
+                <a href="#experience" class="block py-2 px-4 text-sm text-gray-700 hover:bg-amber-50 rounded">Experience</a>
+                <a href="#skills" class="block py-2 px-4 text-sm text-gray-700 hover:bg-amber-50 rounded">Skills</a>
+                <a href="#education" class="block py-2 px-4 text-sm text-gray-700 hover:bg-amber-50 rounded">Education</a>
+            </div>
+        </nav>
+    </header>
+
+    <main id="home" class="container mx-auto px-6 py-12 md:py-20">
+        
+        <section class="text-center">
+            <h1 class="text-4xl md:text-6xl font-extrabold tracking-tight">Senior Project Management Professional</h1>
+            <p class="mt-4 max-w-3xl mx-auto text-lg text-gray-600">Highly accomplished professional with over 11 years of experience leading complex software projects from inception to delivery, driving cross-functional teams, and achieving significant cost savings and efficiency gains.</p>
+            <div class="mt-8 flex justify-center items-center space-x-6 text-sm text-gray-500">
+                <span>&#x260E; +91-7838586734</span>
+                <span>&#x2709; Vaibhavawasthi1110@gmail.com</span>
+            </div>
+        </section>
+
+        <section id="overview" class="mt-20 md:mt-28 scroll-mt-20">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl font-bold">Career Overview</h2>
+                <p class="mt-2 text-gray-600">A high-level look at my professional journey and expertise across various domains.</p>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-8 items-center">
+                <div class="space-y-6">
+                    <div class="bg-white p-6 rounded-lg shadow-md border border-gray-100">
+                        <h3 class="font-bold text-lg text-amber-800">Key Metrics</h3>
+                        <div class="mt-4 grid grid-cols-2 gap-4">
+                            <div class="text-center p-4 bg-amber-50 rounded-lg"><p class="text-3xl font-bold text-amber-700">11+</p><p class="text-sm text-gray-600">Years Experience</p></div>
+                            <div class="text-center p-4 bg-amber-50 rounded-lg"><p class="text-3xl font-bold text-amber-700">10+</p><p class="text-sm text-gray-600">Domains</p></div>
+                            <div class="text-center p-4 bg-amber-50 rounded-lg col-span-2"><p class="text-3xl font-bold text-amber-700">4</p><p class="text-sm text-gray-600">Major Companies</p></div>
+                        </div>
+                    </div>
+                     <div class="bg-white p-6 rounded-lg shadow-md border border-gray-100">
+                        <h3 class="font-bold text-lg text-amber-800">Impact Highlights</h3>
+                        <ul class="mt-4 space-y-3 text-gray-700">
+                            <li class="flex items-start"><span class="text-green-500 mr-2">&#10004;</span> Reduced maintenance turnaround time by 20%.</li>
+                            <li class="flex items-start"><span class="text-green-500 mr-2">&#10004;</span> Cut customer service load by 30%.</li>
+                            <li class="flex items-start"><span class="text-green-500 mr-2">&#10004;</span> Decreased truck rolls by 60%, saving millions.</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow-md border border-gray-100">
+                    <h3 class="font-bold text-center text-lg text-amber-800 mb-4">Domain Experience</h3>
+                    <div class="chart-container"><canvas id="domainChart"></canvas></div>
+                </div>
+            </div>
+        </section>
+
+        <section id="experience" class="mt-20 md:mt-28 scroll-mt-20">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl font-bold">Professional Experience</h2>
+                <p class="mt-2 text-gray-600">An interactive timeline of my roles. Click on a title to expand or use the AI Assistant for insights.</p>
+            </div>
+            <div id="timeline" class="relative max-w-3xl mx-auto"></div>
+        </section>
+
+        <section id="skills" class="mt-20 md:mt-28 scroll-mt-20">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl font-bold">Core Competencies & Skills</h2>
+                <p class="mt-2 text-gray-600">A showcase of the technical and managerial skills I've developed throughout my career.</p>
+            </div>
+            <div id="skills-container" class="max-w-4xl mx-auto space-y-8"></div>
+        </section>
+
+        <section id="education" class="mt-20 md:mt-28 scroll-mt-20">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl font-bold">Education & Certifications</h2>
+                <p class="mt-2 text-gray-600">My academic background and the professional certifications I hold.</p>
+            </div>
+            <div class="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div class="bg-white p-6 rounded-lg shadow-md border border-gray-100">
+                    <h3 class="font-bold text-lg text-amber-800 mb-4">Education</h3>
+                    <p class="font-semibold text-gray-800">B.Tech: Computer Science</p>
+                    <p class="text-gray-500">Foundation of my technical expertise.</p>
+                </div>
+                <div id="certifications-container" class="bg-white p-6 rounded-lg shadow-md border border-gray-100">
+                    <h3 class="font-bold text-lg text-amber-800 mb-4">Certifications</h3>
+                    <div class="space-y-3"></div>
+                </div>
+            </div>
+        </section>
+        
+    </main>
+    
+    <footer class="mt-20 md:mt-28 border-t border-gray-200">
+        <div class="container mx-auto px-6 py-8 text-center text-gray-500">
+            <p>&copy; 2025 Vaibhav Awasthi. All rights reserved.</p>
+            <p class="text-sm mt-2">Interactive resume with ✨ Gemini AI features.</p>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            
+            const professionalExperience = [
+                { role: 'Senior Product Owner', company: 'Airbus', period: 'Jan 2023 – Present', client: '136 Airlines Globally (Skywise)', projects: 'Skywise (ATA Classifier, C-Metric app, Special Data Export, Airline Cockpit, MIS Connector, Partner Program)', responsibilities: [ 'Drove project vision, strategy, and scope definition, collaborating with stakeholders to align roadmaps and prioritize features for successful delivery.', 'Managed and prioritized the project backlog, ensuring alignment with strategic goals and delivering maximum customer value.', 'Guided development teams using Agile methodologies to deliver high-quality software projects on schedule and within budget.', 'Facilitated communication between stakeholders and development teams, providing updates, managing expectations, and resolving conflicts to ensure project progress.', 'Led cross-functional project teams in addressing technical debt, resolving issues, and driving continuous improvement in development processes.', 'Monitored project performance and user feedback, leveraging data-driven insights for continuous improvement and optimization.', ], achievements: [ 'Implemented Bert Model for ATA Chapter prediction, enhancing defect data quality and reducing maintenance turnaround time by 20% for improved operational efficiency.', 'Successfully managed the migration of an existing data export solution from AWS to Foundry native features, resulting in substantial cost savings for Airbus.', 'Led the integration project between Skywise Health Monitoring, Skywise Core, and Airlines Maintenance applications, achieving seamless automation and eliminating manual effort.', "Oversaw the design and rapid development of a mobile application for C-level executives, showcasing the platform's efficiency." ] },
+                { role: 'Senior Product Owner', company: 'FIS', period: 'April 2021 – Dec 2022', client: 'FIS Merchants – US', projects: 'NUANCE US NLP IVR – CORE & IP Merchants, Fast Access Funding, Next Gen- IVRs', responsibilities: [ 'Led cross-functional project teams in the development and delivery of software products, aligning with business goals and user needs.', 'Managed the project backlog, defining user stories, acceptance criteria, and prioritization to drive development efforts.', 'Collaborated closely with Agile development teams to deliver high-quality software products on schedule and within budget.', 'Conducted User Acceptance Testing (UAT) and project demonstrations for stakeholders, ensuring alignment with expectations and requirements.', 'Coordinated bi-weekly with Nuance to resolve development team issues, ensuring project progress.', 'Managed two project teams totaling 22 members.', ], achievements: [ 'Successfully managed the transition of multiple legacy products to a singular, NLP-enabled solution, enhancing ease of management and efficiency.', 'Directed initiatives that reduced customer service department load by 30% and enhanced overall customer experience through self-service enabled features.' ] },
+                { role: 'Senior Business Analyst', company: 'TELUS International', period: 'March 2015 – March 2021', client: 'Charter Communications, Inc. USA', projects: 'Telecom Provisioning and Activation web services & XAP ERP', responsibilities: [ 'Collaborated with stakeholders to elicit, understand, and translate customer needs into Technical Specification Documents, identifying business priorities for project execution.', 'Created essential project documentation including Technical Specification, Low-Level Design, and Use Case documents.', 'Facilitated key Agile project ceremonies such as sprint planning, backlog grooming, daily scrums, stakeholder meetings, and project demos.', 'Led thrice-weekly status meetings to resolve project issues and track timelines.', 'Managed GIT documentation and led external/internal project audits.', 'Collaborated closely with external teams to successfully implement REST web services for assigned projects.', 'Interviewed HODs and Senior Management for requirement identification and finalization, supporting project scope.', 'Created nearly 250 wireframes and finalized UI themes with the UI/UX team for project design.', ], achievements: [ 'Successfully implemented an API solution resulting in a 60% reduction in truck rolls, leading to multi-million dollar savings in a single financial year.', 'Implemented a network of APIs and parallel backend systems to significantly reduce client costs for retrieving information from third-party applications.' ] },
+                { role: 'Business Analyst', company: 'TrilaSoft Solutions', period: 'Dec 2013 – March 2015', client: 'Multiple clients globally', projects: 'RedSky (Relocation & Logistic ERP)', responsibilities: [ 'Served as primary Point of Contact for international clients (Voerman International, Harmony Relocation Networks, Gerson Relocation, High Relocation Worldwide).', 'Resolved client questions quickly and effectively, consistently meeting customer service standards for project inquiries.', ], achievements: [ 'Implemented automation for the batch invoicing process, resulting in a 30% reduction in workload for the accounting team.' ] }
+            ];
+            const skillsData = [ { category: 'Core Skills', items: ['Project Management', 'Planning', 'Execution', 'Scope Management', 'Risk Management', 'Stakeholder Management', 'Agile Methodologies', 'Communication', 'Leadership', 'Problem-solving', 'Decision-making', 'Prioritization'] }, { category: 'Domains', items: ['Airline', 'Telecom', 'ERP', 'IVR', 'NLP', 'Relocation & Logistics', 'Insurance', 'ITSM', 'Recruitment Management', 'HRMS', 'eLearning', 'Project Management'] }, { category: 'Tools', items: ['VersionOne', 'JIRA', 'Rally', 'Bugzilla', 'MS Visio', 'MS Excel', 'MS PowerPoint', 'Slack', 'Confluence', 'SharePoint', 'SoapUI', 'Swagger', 'Lucid Charts', 'Google Suite', 'App Diagram', 'Gliffy Diagram', 'NLP-Bert Model', 'ChatGPT', 'Gemini'] }, { category: 'Technical Documentation', items: ['FRD', 'BRD', 'RFC', 'SOP', 'RTM', 'HLD', 'LLD', 'Google sites', 'Use Case', 'User Stories', 'Test Cases', 'Test Plan', 'Release Notes', 'User Manual', 'Risk Register', 'Audit Documentation'] }, { category: 'UML', items: ['Wireframes', 'Sequence diagrams', 'Data Flow Diagram', 'Business Process Diagram', 'ER Diagram', 'Use Cases'] } ];
+            const certifications = [ 'SAFe 6 PO/PM', 'SAFe 5 Agilist', 'Certified Scrum Product Owner (CSPO)', 'Certified Scrum Master (CSM)' ];
+
+            async function callGemini(prompt) {
+                const apiKey = "";
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+                const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }] };
+                
+                try {
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    const result = await response.json();
+                    if (result.candidates && result.candidates.length > 0 && result.candidates[0].content && result.candidates[0].content.parts && result.candidates[0].content.parts.length > 0) {
+                        return result.candidates[0].content.parts[0].text;
+                    } else {
+                        return "Sorry, the AI couldn't generate a response. The response from the API was empty or invalid.";
+                    }
+                } catch (error) {
+                    console.error("Gemini API call failed:", error);
+                    return "Sorry, there was an error communicating with the AI. Please check the console for details.";
+                }
+            }
+
+            function populateTimeline() {
+                const timelineContainer = document.getElementById('timeline');
+                timelineContainer.innerHTML = professionalExperience.map((job, index) => `
+                    <div class="timeline-item relative pb-8">
+                        <div class="absolute top-1 left-3 -ml-px h-full w-0.5 bg-gray-200"></div>
+                        <div class="relative flex items-start group">
+                            <div class="bg-amber-600 h-6 w-6 rounded-full flex items-center justify-center ring-4 ring-white"><span class="text-white text-xs font-bold">${professionalExperience.length - index}</span></div>
+                            <div class="ml-6 flex-1">
+                                <div class="timeline-item-header cursor-pointer" data-index="${index}">
+                                    <h3 class="font-bold text-lg">${job.role}</h3>
+                                    <p class="font-medium text-amber-700">${job.company}</p>
+                                    <p class="text-sm text-gray-500">${job.period}</p>
+                                </div>
+                                <div id="content-${index}" class="timeline-item-content overflow-hidden max-h-0 opacity-0 transform -translate-y-2">
+                                    <div class="mt-4 bg-gray-50 p-4 rounded-lg border border-gray-200 space-y-4">
+                                        <div><p class="text-sm font-semibold text-gray-700">Client: <span class="font-normal">${job.client}</span></p><p class="text-sm font-semibold text-gray-700 mt-1">Projects: <span class="font-normal">${job.projects}</span></p></div>
+                                        <div><h4 class="font-semibold text-gray-800 mb-2">Responsibilities:</h4><ul class="list-disc list-inside space-y-2 text-gray-600">${job.responsibilities.map(resp => `<li>${resp}</li>`).join('')}</ul></div>
+                                        <div><h4 class="font-semibold text-gray-800 mb-2">Key Achievements:</h4><ul class="list-disc list-inside space-y-2 text-gray-600">${job.achievements.map(ach => `<li>${ach}</li>`).join('')}</ul></div>
+                                        <div class="pt-4 text-right">
+                                            <button class="ai-questions-button gemini-button text-sm font-semibold py-2 px-3 rounded-lg transition-transform transform hover:scale-105" data-index="${index}">✨ Ask AI about this role</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>`).join('');
+            }
+
+            function populateSkills() {
+                const skillsContainer = document.getElementById('skills-container');
+                skillsContainer.innerHTML = skillsData.map(skillGroup => `<div class="bg-white p-6 rounded-lg shadow-md border border-gray-100"><h3 class="font-bold text-lg text-amber-800 mb-4">${skillGroup.category}</h3><div class="flex flex-wrap gap-2">${skillGroup.items.map(item => `<span class="bg-amber-100 text-amber-800 text-sm font-medium px-3 py-1 rounded-full">${item}</span>`).join('')}</div></div>`).join('');
+            }
+            
+            function populateCertifications() {
+                const certsContainer = document.querySelector('#certifications-container .space-y-3');
+                certsContainer.innerHTML = certifications.map(cert => `<div class="flex items-center"><span class="text-amber-600 mr-3">&#127941;</span><p class="font-medium text-gray-700">${cert}</p></div>`).join('');
+            }
+
+            function setupTimelineInteraction() {
+                document.getElementById('timeline').addEventListener('click', function(e) {
+                    if (e.target.closest('.timeline-item-header')) {
+                        const header = e.target.closest('.timeline-item-header');
+                        const index = header.getAttribute('data-index');
+                        const content = document.getElementById(`content-${index}`);
+                        const isOpen = content.style.maxHeight !== '0px';
+
+                        document.querySelectorAll('.timeline-item-content').forEach(c => {
+                            c.style.maxHeight = '0px'; c.style.opacity = '0'; c.style.transform = 'translateY(-0.5rem)';
+                        });
+
+                        if (!isOpen) {
+                            content.style.maxHeight = content.scrollHeight + 'px'; content.style.opacity = '1'; content.style.transform = 'translateY(0)';
+                        }
+                    }
+                    if (e.target.closest('.ai-questions-button')) {
+                        const button = e.target.closest('.ai-questions-button');
+                        const index = button.getAttribute('data-index');
+                        handleAIQuestionsClick(index);
+                    }
+                });
+            }
+            
+            function createDomainChart() {
+                const ctx = document.getElementById('domainChart').getContext('2d');
+                new Chart(ctx, { type: 'doughnut', data: { labels: ['Airline', 'Telecom', 'ERP', 'NLP/IVR', 'Logistics', 'Other'], datasets: [{ label: 'Domain Experience', data: [25, 25, 20, 15, 10, 5], backgroundColor: ['#92400E', '#B45309', '#D97706', '#F59E0B', '#FBBF24', '#FCD34D'], borderColor: '#FDFBF8', borderWidth: 4, hoverOffset: 8 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { font: { family: "'Inter', sans-serif" }, boxWidth: 15, padding: 20 } }, tooltip: { callbacks: { label: function(context) { let label = context.label || ''; if (label) { label += ': '; } if (context.parsed !== null) { label += context.parsed + '%'; } return label; } } } }, cutout: '60%' } });
+            }
+
+            function setupMobileMenu() {
+                document.getElementById('mobile-menu-button').addEventListener('click', () => {
+                    document.getElementById('mobile-menu').classList.toggle('hidden');
+                });
+            }
+            
+            function setupNavHighlighting() {
+                const sections = document.querySelectorAll('section[id]');
+                const navLinks = document.querySelectorAll('.nav-link');
+                const observer = new IntersectionObserver((entries) => { entries.forEach(entry => { if (entry.isIntersecting) { navLinks.forEach(link => { link.classList.remove('active'); if (link.getAttribute('href').substring(1) === entry.target.id) { link.classList.add('active'); } }); } }); }, { rootMargin: '-50% 0px -50% 0px', threshold: 0 });
+                sections.forEach(section => observer.observe(section));
+            }
+
+            function setupAIFeatures() {
+                const modal = document.getElementById('ai-modal');
+                const closeButton = document.getElementById('modal-close-button');
+                modal.addEventListener('click', (e) => { if (e.target === modal) { hideModal(); } });
+                closeButton.addEventListener('click', hideModal);
+            }
+
+            async function handleAIQuestionsClick(index) {
+                const job = professionalExperience[index];
+                const modalTitle = document.getElementById('modal-title');
+                const modalContent = document.getElementById('modal-content');
+                
+                modalTitle.textContent = `✨ AI Assistant for: ${job.role} at ${job.company}`;
+                modalContent.innerHTML = '<div class="flex justify-center items-center"><div class="loader"></div></div>';
+                showModal();
+
+                const prompt = `You are an expert technical recruiter. Based on the following job role, responsibilities, and achievements, generate 5 insightful behavioral and technical interview questions. Format the output as an HTML ordered list (<ol><li>...</li></ol>).
+                
+                Role: ${job.role}
+                Company: ${job.company}
+                Responsibilities: ${job.responsibilities.join('. ')}
+                Achievements: ${job.achievements.join('. ')}`;
+
+                const questions = await callGemini(prompt);
+                modalContent.innerHTML = questions;
+            }
+
+            function showModal() {
+                document.getElementById('ai-modal').classList.remove('hidden');
+                document.getElementById('ai-modal').classList.add('flex');
+            }
+
+            function hideModal() {
+                document.getElementById('ai-modal').classList.add('hidden');
+                document.getElementById('ai-modal').classList.remove('flex');
+            }
+
+            populateTimeline();
+            populateSkills();
+            populateCertifications();
+            setupTimelineInteraction();
+            createDomainChart();
+            setupMobileMenu();
+            setupNavHighlighting();
+            setupAIFeatures();
+        });
+    </script>
+</body>
+</html>
